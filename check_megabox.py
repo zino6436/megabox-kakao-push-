@@ -54,13 +54,16 @@ def get_available_dates():
 
 
 def get_kakao_access_token():
+    params = {
+        "grant_type": "refresh_token",
+        "client_id": os.environ["KAKAO_REST_API_KEY"],
+        "refresh_token": os.environ["KAKAO_REFRESH_TOKEN"],
+    }
+    if os.environ.get("KAKAO_CLIENT_SECRET"):
+        params["client_secret"] = os.environ["KAKAO_CLIENT_SECRET"]
     resp = requests.post(
         "https://kauth.kakao.com/oauth/token",
-        data={
-            "grant_type": "refresh_token",
-            "client_id": os.environ["KAKAO_REST_API_KEY"],
-            "refresh_token": os.environ["KAKAO_REFRESH_TOKEN"],
-        },
+        data=params,
         timeout=10
     )
     result = resp.json()
