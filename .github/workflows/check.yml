@@ -1,0 +1,48 @@
+name: 메가박스 예매 확인
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # 5분마다 실행
+  workflow_dispatch:         # 수동 실행 가능
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 패키지 설치
+        run: pip install requests
+
+      - name: 예매 확인 실행
+        env:
+          KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_REFRESH_TOKEN: ${{ secrets.KAKAO_REFRESH_TOKEN }}
+        run: python check_megabox.py
+
+      - name: 상태 파일 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git diff --staged --quiet || (git commit -m "chore: update state [skip ci]" && git push)
+
+      - name: Refresh Token 갱신 알림
+        if: always()
+        run: |
+          if [ -f new_refresh_token.txt ]; then
+            echo "::warning::새 Refresh Token이 발급되었습니다. GitHub Secrets의 KAKAO_REFRESH_TOKEN 값을 아래로 업데이트하세요."
+            cat new_refresh_token.txt
+          fi
